@@ -30,10 +30,9 @@
   </extensions>
 
   <actions>
-    <group id="MyPlugin.SampleMenu" text="_Sample Menu" description="Sample menu">
+    <group id="PublisSqlScript.SampleMenu" text="_Sample Menu" description="Sample menu">
       <add-to-group group-id="MainMenu" anchor="last"  />
-      <action id="Myplugin.Textboxes" class="TextBoxes" text="Text _Boxes" description="A test menu item" />
-      <action id="Myplugin.Dialogs" class="MyShowDialog" text="Show _Dialog" description="A test menu item" />
+      <action id="PublisSqlScript.CreatePublishScript" class="CreatePublishScriptHandler" text="Create Publish Script" description="Creates a publish script for sql files" />
     </group>
   </actions>
 
