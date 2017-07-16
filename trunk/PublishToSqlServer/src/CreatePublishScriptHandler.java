@@ -14,6 +14,7 @@ import java.util.*;
 
 public class CreatePublishScriptHandler extends AnAction {
 
+    private final String dbo = "dbo";
     private String publishFailedTitle = "Create Publish Script Failed";;
 
     // If you register the action from Java code, this constructor is used to set the menu item name
@@ -86,7 +87,20 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     private SQLFile replaceProcedureUpdate(SQLFile sqlFile) {
-        return replaceCreateWithUpdate(sqlFile, "PROCEDURE");
+        List<String> sqlContentOld = sqlFile.getSqlContent();
+        String procedureName = sqlFile.getSqlContent().get(0).split("PROCEDURE")[1].trim();
+        String sqlReplaced = AlterIFExistsRoutine(procedureName);
+        sqlContentOld.add(0, sqlReplaced);
+        int lastLineIndex = sqlContentOld.size() - 1;
+        String lastLine = sqlContentOld.get(lastLineIndex) + ";";
+        sqlContentOld.set(lastLineIndex, lastLine);
+        return new SQLFile(sqlContentOld);
+    }
+
+    String AlterIFExistsRoutine(String procedureName) {
+        return "IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_NAME = '"+procedureName+"' AND ROUTINE_SCHEMA = '"
+                + dbo + "' AND ROUTINE_TYPE = 'PROCEDURE') "
+                + "EXEC ('DROP PROCEDURE "+procedureName + "') GO";
     }
 
     @NotNull
