@@ -3,11 +3,10 @@ import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import net.pempek.unicode.UnicodeBOMInputStream;
 import org.jetbrains.annotations.NotNull;
 
-import java.io.File;
-import java.io.IOException;
-import java.io.PrintWriter;
+import java.io.*;
 import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.*;
@@ -49,7 +48,7 @@ public class CreatePublishScriptHandler extends AnAction {
         try{
             PrintWriter writer = new PrintWriter(location, "Unicode");
             for (String line : publishScript.getSqlContent()) {
-                writer.println(line.replace("\uFEFF", ""));
+                writer.println(line);
             }
             writer.close();
         } catch (IOException e) {
@@ -155,7 +154,19 @@ public class CreatePublishScriptHandler extends AnAction {
 
     private List<String> readContent(File fileEntry) {
         try {
-            return Files.readAllLines(fileEntry.toPath());
+            FileInputStream fis = new FileInputStream(fileEntry);
+            UnicodeBOMInputStream ubis = new UnicodeBOMInputStream(fis);
+            ubis.skipBOM();
+            InputStreamReader fisWithpoutBoms = new InputStreamReader(ubis);
+            BufferedReader br = new BufferedReader(fisWithpoutBoms);
+
+            String line;
+            List<String> lines = new ArrayList<>();
+            while ((line=br.readLine()) != null) {
+                lines.add(line);
+            }
+
+            return lines;
         } catch (IOException e) {
             Messages.showErrorDialog("Could not read sql file: " + fileEntry.getName(), publishFailedTitle);
             return null;
