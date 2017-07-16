@@ -47,9 +47,9 @@ public class CreatePublishScriptHandler extends AnAction {
 
     private void saveSqlFile(SQLFile publishScript,String location) {
         try{
-            PrintWriter writer = new PrintWriter(location, "UTF-8");
+            PrintWriter writer = new PrintWriter(location, "Unicode");
             for (String line : publishScript.getSqlContent()) {
-                writer.println(line);
+                writer.println(line.replace("\uFEFF", ""));
             }
             writer.close();
         } catch (IOException e) {
@@ -91,24 +91,28 @@ public class CreatePublishScriptHandler extends AnAction {
         String procedureName = sqlFile.getSqlContent().get(0).split("PROCEDURE")[1].trim();
         String sqlReplaced = AlterIFExistsRoutine(procedureName);
         sqlContentOld.add(0, sqlReplaced);
-        int lastLineIndex = sqlContentOld.size() - 1;
-        String lastLine = sqlContentOld.get(lastLineIndex) + ";";
-        sqlContentOld.set(lastLineIndex, lastLine);
+        sqlContentOld.add(sqlContentOld.size(), "GO");
         return new SQLFile(sqlContentOld);
     }
 
     String AlterIFExistsRoutine(String procedureName) {
-        return "IF EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.ROUTINES WHERE ROUTINE_NAME = '"+procedureName+"' AND ROUTINE_SCHEMA = '"
-                + dbo + "' AND ROUTINE_TYPE = 'PROCEDURE') "
-                + "EXEC ('DROP PROCEDURE "+procedureName + "') GO";
+        return "IF EXISTS ( SELECT * \n" +
+                "            FROM   sysobjects \n" +
+                "            WHERE  id = object_id(N'" + procedureName + "') \n" +
+                "                   and OBJECTPROPERTY(id, N'IsProcedure') = 1 )\n" +
+                "BEGIN\n" +
+                "    DROP PROCEDURE "+procedureName+"\n" +
+                "END\n" +
+                "GO";
     }
 
     @NotNull
     private SQLFile replaceCreateWithUpdate(SQLFile sqlFile, String entity) {
         List<String> sqlContentOld = sqlFile.getSqlContent();
         String sqlContentCreateProcedure = sqlFile.getSqlContent().get(0);
-        String sqlReplaced = sqlContentCreateProcedure.replace("CREATE " + entity, "DROP " + entity) + " GO";
+        String sqlReplaced = sqlContentCreateProcedure.replace("CREATE " + entity, "DROP " + entity);
         sqlContentOld.add(0, sqlReplaced);
+        sqlContentOld.add(1, "GO");
         int lastLineIndex = sqlContentOld.size() - 1;
         String lastLine = sqlContentOld.get(lastLineIndex) + ";";
         sqlContentOld.set(lastLineIndex, lastLine);
