@@ -1,8 +1,11 @@
-import com.intellij.openapi.actionSystem.AnAction;
-import com.intellij.openapi.actionSystem.AnActionEvent;
-import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.module.Module;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.VirtualFile;
+import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
+import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeBase;
+import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
 import net.pempek.unicode.UnicodeBOMInputStream;
 import org.jetbrains.annotations.NotNull;
 
@@ -14,7 +17,8 @@ import java.util.*;
 public class CreatePublishScriptHandler extends AnAction {
 
     private final String dbo = "dbo";
-    private String publishFailedTitle = "Create Publish Script Failed";;
+    private String publishFailedTitle = "Create Publish Script Failed";
+    ;
 
     // If you register the action from Java code, this constructor is used to set the menu item name
     // (optionally, you can specify the menu description and an icon to display next to the menu item).
@@ -27,7 +31,7 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     public void actionPerformed(AnActionEvent event) {
-        final File folder = getDatabaseFolder(event);
+        final VirtualDirectoryImpl folder = getDatabaseFolder(event);
         List<SQLFile> sqlFiles = getSQLFiles(folder);
         List<SQLFile> modifiedSQLFiles = getSqlFilesUpdated(sqlFiles);
         SQLFile publishScript = createPublishScript(modifiedSQLFiles);
@@ -44,8 +48,8 @@ public class CreatePublishScriptHandler extends AnAction {
         }
     }
 
-    private void saveSqlFile(SQLFile publishScript,String location) {
-        try{
+    private void saveSqlFile(SQLFile publishScript, String location) {
+        try {
             PrintWriter writer = new PrintWriter(location, "Unicode");
             for (String line : publishScript.getSqlContent()) {
                 writer.println(line);
@@ -59,7 +63,7 @@ public class CreatePublishScriptHandler extends AnAction {
     private SQLFile createPublishScript(List<SQLFile> modifiedSQLFiles) {
         List<String> sqlStatements = new ArrayList<>();
 
-        for(SQLFile sqlFile : modifiedSQLFiles) {
+        for (SQLFile sqlFile : modifiedSQLFiles) {
             sqlStatements.addAll(sqlFile.getSqlContent());
         }
         return new SQLFile(sqlStatements);
@@ -68,7 +72,7 @@ public class CreatePublishScriptHandler extends AnAction {
     private List<SQLFile> ParseSqlFilesToUpdate(List<SQLFile> sqlFiles) throws ParseException {
         List<SQLFile> edditedtSqlFiles = new ArrayList<>();
 
-        for(SQLFile sqlFile : sqlFiles) {
+        for (SQLFile sqlFile : sqlFiles) {
             String firstLine = sqlFile.getSqlContent().get(0);
             if (firstLine.contains("CREATE PROCEDURE")) {
                 SQLFile edditedSqlFile = replaceProcedureUpdate(sqlFile);
@@ -100,7 +104,7 @@ public class CreatePublishScriptHandler extends AnAction {
                 "            WHERE  id = object_id(N'" + procedureName + "') \n" +
                 "                   and OBJECTPROPERTY(id, N'IsProcedure') = 1 )\n" +
                 "BEGIN\n" +
-                "    DROP PROCEDURE "+procedureName+"\n" +
+                "    DROP PROCEDURE " + procedureName + "\n" +
                 "END\n" +
                 "GO";
     }
@@ -119,27 +123,58 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     @NotNull
-    private File getDatabaseFolder(AnActionEvent event) {
-        Project project = event.getData(PlatformDataKeys.PROJECT);
-        String projectFilePath = project.getBasePath();
-        String dataBaseProject = projectFilePath+ "/Database/dbo";
+    private VirtualDirectoryImpl getDatabaseFolder(AnActionEvent event) {
+        Object project = event.getData(PlatformDataKeys.SELECTED_ITEM);
+        if (project instanceof SolutionExplorerNodeRider) {
+            SolutionExplorerNodeRider node = (SolutionExplorerNodeRider) project;
+            VirtualFile virtualFile = node.getVirtualFile();
+            if (virtualFile instanceof VirtualDirectoryImpl) {
+                return (VirtualDirectoryImpl) virtualFile;
+            }
+        }
+        return null;
+    }
 
-        return new File(dataBaseProject);
+    @Override
+    public void update(AnActionEvent event) {
+        Presentation presentation = event.getPresentation();
+
+        Object project = event.getData(PlatformDataKeys.SELECTED_ITEM);
+        if (project instanceof SolutionExplorerNodeRider) {
+            SolutionExplorerNodeRider node = (SolutionExplorerNodeRider) project;
+            VirtualFile virtualFile = node.getVirtualFile();
+            if (virtualFile instanceof VirtualDirectoryImpl)
+            {
+                show(presentation);
+                return;
+            }
+        }
+        hide(presentation);
+    }
+
+    private static void show(Presentation presentation) {
+        presentation.setEnabled(true);
+        presentation.setVisible(true);
+    }
+
+    private static void hide(Presentation presentation) {
+        presentation.setEnabled(false);
+        presentation.setVisible(false);
     }
 
     private File getPublishScriptLocation(AnActionEvent event) {
         Project project = event.getData(PlatformDataKeys.PROJECT);
         String projectFilePath = project.getBasePath();
-        String dataBaseProject = projectFilePath+ "/Database";
+        String dataBaseProject = projectFilePath + "/Database";
 
         return new File(dataBaseProject);
     }
 
-    public ArrayList<SQLFile> getSQLFiles(final File folder) {
+    public ArrayList<SQLFile> getSQLFiles(final VirtualDirectoryImpl folder) {
         ArrayList<SQLFile> sqlFiles = new ArrayList<>();
-        for (final File fileEntry : folder.listFiles()) {
-            if (fileEntry.isDirectory()) {
-                sqlFiles.addAll(getSQLFiles(fileEntry));
+        for (final VirtualFile fileEntry : folder.getChildren()) {
+            if (fileEntry instanceof VirtualDirectoryImpl) {
+                sqlFiles.addAll(getSQLFiles((VirtualDirectoryImpl) fileEntry));
             } else {
                 String extension = getFileExtension(fileEntry);
                 if (extension.equals(SQLFile.EXTENSION)) {
@@ -152,17 +187,17 @@ public class CreatePublishScriptHandler extends AnAction {
         return sqlFiles;
     }
 
-    private List<String> readContent(File fileEntry) {
+    private List<String> readContent(VirtualFile fileEntry) {
         try {
-            FileInputStream fis = new FileInputStream(fileEntry);
-            UnicodeBOMInputStream ubis = new UnicodeBOMInputStream(fis);
-            ubis.skipBOM();
-            InputStreamReader fisWithpoutBoms = new InputStreamReader(ubis);
+            InputStream fileInputStream = fileEntry.getInputStream();
+            UnicodeBOMInputStream unicodeBOMInputStream = new UnicodeBOMInputStream(fileInputStream);
+            unicodeBOMInputStream.skipBOM();
+            InputStreamReader fisWithpoutBoms = new InputStreamReader(unicodeBOMInputStream);
             BufferedReader br = new BufferedReader(fisWithpoutBoms);
 
             String line;
             List<String> lines = new ArrayList<>();
-            while ((line=br.readLine()) != null) {
+            while ((line = br.readLine()) != null) {
                 lines.add(line);
             }
 
@@ -173,14 +208,13 @@ public class CreatePublishScriptHandler extends AnAction {
         }
     }
 
-    private String getFileExtension(File fileEntry) {
+    private String getFileExtension(VirtualFile fileEntry) {
         String[] splits = fileEntry.getName().split("\\.");
 
         String extension = "";
 
-        if(splits.length >= 2)
-        {
-            extension = splits[splits.length-1];
+        if (splits.length >= 2) {
+            extension = splits[splits.length - 1];
         }
         return extension;
     }

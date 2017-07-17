@@ -31,7 +31,7 @@
 
   <actions>
     <group id="PublisSqlScript.SampleMenu" text="_Sample Menu" description="Sample menu">
-      <add-to-group group-id="MainMenu" anchor="last"  />
+      <add-to-group group-id="ProjectViewPopupMenu" anchor="last"  />
       <action id="PublisSqlScript.CreatePublishScript" class="CreatePublishScriptHandler" text="Create Publish Script" description="Creates a publish script for sql files" />
     </group>
   </actions>
