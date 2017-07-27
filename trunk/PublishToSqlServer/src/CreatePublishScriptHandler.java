@@ -1,34 +1,28 @@
-import com.intellij.openapi.actionSystem.*;
+import com.intellij.openapi.actionSystem.AnAction;
+import com.intellij.openapi.actionSystem.AnActionEvent;
+import com.intellij.openapi.actionSystem.PlatformDataKeys;
+import com.intellij.openapi.actionSystem.Presentation;
 import com.intellij.openapi.fileEditor.FileEditorManager;
-import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
-import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerViewPane;
 import net.pempek.unicode.UnicodeBOMInputStream;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
 import java.text.ParseException;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.List;
 
 public class CreatePublishScriptHandler extends AnAction {
 
-    private final String dbo = "dbo";
     private String publishFailedTitle = "Create Publish Script Failed";
-    ;
 
-    // If you register the action from Java code, this constructor is used to set the menu item name
-    // (optionally, you can specify the menu description and an icon to display next to the menu item).
-    // You can omit this constructor when registering the action in the plugin.xml file.
     public CreatePublishScriptHandler() {
-        // Set the menu item name.
         super("Create _Publish _Script _Handler");
-        // Set the menu item name, description and icon.
-        // super("Text _Boxes","Item description",IconLoader.getIcon("/Mypackage/icon.png"));
     }
 
     public void actionPerformed(AnActionEvent event) {
@@ -40,7 +34,8 @@ public class CreatePublishScriptHandler extends AnAction {
         saveSqlFile(publishScript, publishScriptLocation);
 
         folder.refresh(false,true);
-        FileEditorManager manager = FileEditorManager.getInstance(event.getProject());
+        FileEditorManager manager;
+        manager = FileEditorManager.getInstance(event.getProject());
         VirtualFile refreshedFile = LocalFileSystem.getInstance().findFileByPath(publishScriptLocation);
         manager.openFile(refreshedFile, true);
     }
@@ -92,7 +87,7 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     private SQLFile replaceTableUpdate(SQLFile sqlFile) {
-        return replaceCreateWithUpdate(sqlFile, "TABLE");
+        return replaceCreateWithUpdate(sqlFile);
     }
 
     private SQLFile replaceProcedureUpdate(SQLFile sqlFile) {
@@ -104,7 +99,7 @@ public class CreatePublishScriptHandler extends AnAction {
         return new SQLFile(sqlContentOld);
     }
 
-    String AlterIFExistsRoutine(String procedureName) {
+    private String AlterIFExistsRoutine(String procedureName) {
         return "IF EXISTS ( SELECT * \n" +
                 "            FROM   sysobjects \n" +
                 "            WHERE  id = object_id(N'" + procedureName + "') \n" +
@@ -116,10 +111,10 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     @NotNull
-    private SQLFile replaceCreateWithUpdate(SQLFile sqlFile, String entity) {
+    private SQLFile replaceCreateWithUpdate(SQLFile sqlFile) {
         List<String> sqlContentOld = sqlFile.getSqlContent();
         String sqlContentCreateProcedure = sqlFile.getSqlContent().get(0);
-        String sqlReplaced = sqlContentCreateProcedure.replace("CREATE " + entity, "DROP " + entity);
+        String sqlReplaced = sqlContentCreateProcedure.replace("CREATE " + "TABLE", "DROP " + "TABLE");
         sqlContentOld.add(0, sqlReplaced);
         sqlContentOld.add(1, "GO");
         int lastLineIndex = sqlContentOld.size() - 1;
