@@ -7,6 +7,7 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
+import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerViewPane;
 import net.pempek.unicode.UnicodeBOMInputStream;
 import org.jetbrains.annotations.NotNull;
 
@@ -35,10 +36,13 @@ public class CreatePublishScriptHandler extends AnAction {
         List<SQLFile> sqlFiles = getSQLFiles(folder);
         List<SQLFile> modifiedSQLFiles = getSqlFilesUpdated(sqlFiles);
         SQLFile publishScript = createPublishScript(modifiedSQLFiles);
-        VirtualFile publishScriptFile = saveSqlFile(publishScript, getPublishScriptLocation(event).getAbsolutePath() + "/publishScript.sql");
+        String publishScriptLocation = getPublishScriptLocation(event).getAbsolutePath() + "/publishScript.sql";
+        saveSqlFile(publishScript, publishScriptLocation);
 
+        folder.refresh(false,true);
         FileEditorManager manager = FileEditorManager.getInstance(event.getProject());
-        manager.openFile(publishScriptFile, true);
+        VirtualFile refreshedFile = LocalFileSystem.getInstance().findFileByPath(publishScriptLocation);
+        manager.openFile(refreshedFile, true);
     }
 
     private List<SQLFile> getSqlFilesUpdated(List<SQLFile> sqlFiles) {
@@ -50,18 +54,15 @@ public class CreatePublishScriptHandler extends AnAction {
         }
     }
 
-    private VirtualFile saveSqlFile(SQLFile publishScript, String location) {
+    private void saveSqlFile(SQLFile publishScript, String location) {
         try {
             PrintWriter writer = new PrintWriter(location, "Unicode");
             for (String line : publishScript.getSqlContent()) {
                 writer.println(line);
             }
             writer.close();
-
-            return LocalFileSystem.getInstance().findFileByPath(location);
         } catch (IOException e) {
             Messages.showErrorDialog("Could not save publish script", publishFailedTitle);
-            return null;
         }
     }
 
@@ -132,7 +133,7 @@ public class CreatePublishScriptHandler extends AnAction {
         Object project = event.getData(PlatformDataKeys.SELECTED_ITEM);
         if (project instanceof SolutionExplorerNodeRider) {
             SolutionExplorerNodeRider node = (SolutionExplorerNodeRider) project;
-            VirtualFile virtualFile = node.getVirtualFile();
+            VirtualFile virtualFile = node.getVirtualFile().getParent();
             if (virtualFile instanceof VirtualDirectoryImpl) {
                 return (VirtualDirectoryImpl) virtualFile;
             }
@@ -148,7 +149,8 @@ public class CreatePublishScriptHandler extends AnAction {
         if (project instanceof SolutionExplorerNodeRider) {
             SolutionExplorerNodeRider node = (SolutionExplorerNodeRider) project;
             VirtualFile virtualFile = node.getVirtualFile();
-            if (virtualFile instanceof VirtualDirectoryImpl)
+            String extension = virtualFile.getExtension();
+            if (extension != null && extension.equals("sqlproj"))
             {
                 show(presentation);
                 return;
