@@ -1,16 +1,16 @@
 import com.intellij.openapi.actionSystem.*;
-import com.intellij.openapi.module.Module;
+import com.intellij.openapi.fileEditor.FileEditorManager;
+import com.intellij.openapi.fileEditor.OpenFileDescriptor;
 import com.intellij.openapi.project.Project;
 import com.intellij.openapi.ui.Messages;
+import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
-import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeBase;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
 import net.pempek.unicode.UnicodeBOMInputStream;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
-import java.nio.file.Files;
 import java.text.ParseException;
 import java.util.*;
 
@@ -35,8 +35,10 @@ public class CreatePublishScriptHandler extends AnAction {
         List<SQLFile> sqlFiles = getSQLFiles(folder);
         List<SQLFile> modifiedSQLFiles = getSqlFilesUpdated(sqlFiles);
         SQLFile publishScript = createPublishScript(modifiedSQLFiles);
-        saveSqlFile(publishScript, getPublishScriptLocation(event).getAbsolutePath() + "/publishScript.sql");
-        Messages.showInfoMessage("Publish Script sucessfully generated", "Success");
+        VirtualFile publishScriptFile = saveSqlFile(publishScript, getPublishScriptLocation(event).getAbsolutePath() + "/publishScript.sql");
+
+        FileEditorManager manager = FileEditorManager.getInstance(event.getProject());
+        manager.openFile(publishScriptFile, true);
     }
 
     private List<SQLFile> getSqlFilesUpdated(List<SQLFile> sqlFiles) {
@@ -48,15 +50,18 @@ public class CreatePublishScriptHandler extends AnAction {
         }
     }
 
-    private void saveSqlFile(SQLFile publishScript, String location) {
+    private VirtualFile saveSqlFile(SQLFile publishScript, String location) {
         try {
             PrintWriter writer = new PrintWriter(location, "Unicode");
             for (String line : publishScript.getSqlContent()) {
                 writer.println(line);
             }
             writer.close();
+
+            return LocalFileSystem.getInstance().findFileByPath(location);
         } catch (IOException e) {
             Messages.showErrorDialog("Could not save publish script", publishFailedTitle);
+            return null;
         }
     }
 
