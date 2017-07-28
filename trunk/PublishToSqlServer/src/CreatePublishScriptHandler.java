@@ -1,3 +1,4 @@
+import Domain.SQLFile;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
@@ -9,7 +10,9 @@ import com.intellij.openapi.vfs.LocalFileSystem;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
-import net.pempek.unicode.UnicodeBOMInputStream;
+import ErrorHandling.ErrorInvoker;
+import FileIO.BomPomReader;
+import FileIO.SqlParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
@@ -18,7 +21,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CreatePublishScriptHandler extends AnAction {
-
+    private SqlParser sqlParser;
+    private BomPomReader bomPomReader;
+    private ErrorInvoker errorInvoker;
     private String publishFailedTitle = "Create Publish Script Failed";
 
     public CreatePublishScriptHandler() {
@@ -26,13 +31,22 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     public void actionPerformed(AnActionEvent event) {
-        final VirtualDirectoryImpl folder = getDatabaseFolder(event);
-        List<SQLFile> sqlFiles = getSQLFiles(folder);
+        errorInvoker = new ErrorInvoker();
+        bomPomReader = new BomPomReader(errorInvoker);
+        sqlParser = new SqlParser(bomPomReader);
+        final VirtualDirectoryImpl databaseFolder = getDatabaseFolder(event);
+
+
+        List<SQLFile> sqlFiles = getSQLFiles(databaseFolder);
         List<SQLFile> modifiedSQLFiles = getSqlFilesUpdated(sqlFiles);
         SQLFile publishScript = createPublishScript(modifiedSQLFiles);
+
         String publishScriptLocation = getPublishScriptLocation(event).getAbsolutePath() + "/publishScript.sql";
         saveSqlFile(publishScript, publishScriptLocation);
+        openSqlFileInEditor(event, databaseFolder, publishScriptLocation);
+    }
 
+    private void openSqlFileInEditor(AnActionEvent event, VirtualDirectoryImpl folder, String publishScriptLocation) {
         folder.refresh(false,true);
         FileEditorManager manager;
         manager = FileEditorManager.getInstance(event.getProject());
@@ -180,7 +194,7 @@ public class CreatePublishScriptHandler extends AnAction {
             } else {
                 String extension = getFileExtension(fileEntry);
                 if (extension.equals(SQLFile.EXTENSION)) {
-                    List<String> sqlContent = readContent(fileEntry);
+                    List<String> sqlContent = bomPomReader.readLines(fileEntry);
                     SQLFile sqlFile = new SQLFile(sqlContent);
                     sqlFiles.add(sqlFile);
                 }
@@ -189,26 +203,7 @@ public class CreatePublishScriptHandler extends AnAction {
         return sqlFiles;
     }
 
-    private List<String> readContent(VirtualFile fileEntry) {
-        try {
-            InputStream fileInputStream = fileEntry.getInputStream();
-            UnicodeBOMInputStream unicodeBOMInputStream = new UnicodeBOMInputStream(fileInputStream);
-            unicodeBOMInputStream.skipBOM();
-            InputStreamReader fisWithpoutBoms = new InputStreamReader(unicodeBOMInputStream);
-            BufferedReader br = new BufferedReader(fisWithpoutBoms);
 
-            String line;
-            List<String> lines = new ArrayList<>();
-            while ((line = br.readLine()) != null) {
-                lines.add(line);
-            }
-
-            return lines;
-        } catch (IOException e) {
-            Messages.showErrorDialog("Could not read sql file: " + fileEntry.getName(), publishFailedTitle);
-            return null;
-        }
-    }
 
     private String getFileExtension(VirtualFile fileEntry) {
         String[] splits = fileEntry.getName().split("\\.");
