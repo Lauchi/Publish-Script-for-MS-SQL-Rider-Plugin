@@ -9,8 +9,9 @@ public class SQLFile {
     private List<String> sqlContent;
 
     public SQLFile(List<String> sqlContent) {
-
-        this.sqlContent = sqlContent;
+        List<String> strings = new ArrayList<>();
+        strings.addAll(sqlContent);
+        this.sqlContent = strings;
     }
 
     public List<String> getSqlContent() {
