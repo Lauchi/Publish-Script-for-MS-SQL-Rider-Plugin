@@ -1,7 +1,12 @@
-package FileIO;
+package SQLParserStateMachine;
 
 import Domain.SQLCommand;
+import FileIO.BomPomReader;
 import com.intellij.openapi.vfs.VirtualFile;
+
+import java.util.List;
+
+import static com.intellij.icons.AllIcons.FileTypes.AS;
 
 public class SqlParser {
     private BomPomReader fileReader;
@@ -11,7 +16,11 @@ public class SqlParser {
     }
 
     public SQLCommand parseFileToSql(VirtualFile file) {
-        String strings = fileReader.readContent(file);
+        List<String> strings = fileReader.readLines(file);
+        SQLParseState state = new ParseStart();
+        for (String line : strings) {
+
+        }
         return null;
     }
 }

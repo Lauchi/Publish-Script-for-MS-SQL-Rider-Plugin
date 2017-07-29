@@ -12,7 +12,7 @@ import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
 import ErrorHandling.ErrorInvoker;
 import FileIO.BomPomReader;
-import FileIO.SqlParser;
+import SQLParserStateMachine.SqlParser;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.*;
