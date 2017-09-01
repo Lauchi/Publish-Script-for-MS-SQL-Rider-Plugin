@@ -39,6 +39,7 @@ public class CreatePublishScriptHandler extends AnAction {
         bomPomReader = new BomPomReader(errorInvoker);
         jSqlParser = new CCJSqlParserManager();
         final VirtualDirectoryImpl databaseFolder = getDatabaseFolder(event);
+        // first git commit test
 
         String CreateTAbles = null;
         try {
