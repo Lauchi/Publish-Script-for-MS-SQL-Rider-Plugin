@@ -20,4 +20,13 @@ public class SQLFile {
         strings.addAll(sqlContent);
         return strings;
     }
+
+    public String getProcedureName() {
+        for (String line : getSqlContent()) {
+            if (line.toUpperCase().contains("CREATE PROCEDURE")) {
+                return line.toUpperCase().split("PROCEDURE")[1].trim();
+            }
+        }
+        return null;
+    }
 }
