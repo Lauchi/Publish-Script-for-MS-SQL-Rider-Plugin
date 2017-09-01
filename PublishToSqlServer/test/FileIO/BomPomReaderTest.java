@@ -1,7 +1,6 @@
 package FileIO;
 
 import com.intellij.openapi.vfs.VirtualFile;
-import kotlin.test.CollectionAssertionsKt;
 import org.junit.Assert;
 import org.junit.Test;
 

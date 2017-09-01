@@ -39,13 +39,12 @@ public class CreatePublishScriptHandler extends AnAction {
         bomPomReader = new BomPomReader(errorInvoker);
         jSqlParser = new CCJSqlParserManager();
         final VirtualDirectoryImpl databaseFolder = getDatabaseFolder(event);
-        // first git commit test
 
-        String CreateTAbles = null;
+        String CreateTables = null;
         try {
             ArrayList<Statement> sqlCreateTableFiles = getSqlCreateTableFiles(databaseFolder);
             for(Statement statement : sqlCreateTableFiles) {
-                CreateTAbles += statement.toString();
+                CreateTables += statement.toString();
             }
         } catch (IOException e) {
             e.printStackTrace();
