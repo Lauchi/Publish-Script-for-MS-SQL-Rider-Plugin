@@ -1,6 +1,8 @@
 package Domain;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 /**
  * Created by sheiss on 16/07/2017.
@@ -24,7 +26,9 @@ public class SQLFile {
     public String getProcedureName() {
         for (String line : getSqlContent()) {
             if (line.toUpperCase().contains("CREATE PROCEDURE")) {
-                return line.toUpperCase().split("PROCEDURE")[1].trim();
+                String splitterValue = "PROCEDURE";
+                String modified = Pattern.compile("PROCEDURE", Pattern.CASE_INSENSITIVE).matcher(line).replaceAll(splitterValue);
+                return modified.split(splitterValue)[1].trim();
             }
         }
         return null;
