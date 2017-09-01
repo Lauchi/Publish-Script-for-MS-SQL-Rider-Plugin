@@ -27,7 +27,7 @@ public class SQLFile {
         for (String line : getSqlContent()) {
             if (line.toUpperCase().contains("CREATE PROCEDURE")) {
                 String splitterValue = "PROCEDURE";
-                String modified = Pattern.compile("PROCEDURE", Pattern.CASE_INSENSITIVE).matcher(line).replaceAll(splitterValue);
+                String modified = Pattern.compile(splitterValue, Pattern.CASE_INSENSITIVE).matcher(line).replaceAll(splitterValue);
                 return modified.split(splitterValue)[1].trim();
             }
         }
