@@ -41,18 +41,23 @@ public class CreatePublishScriptHandler extends AnAction {
 
         final VirtualDirectoryImpl databaseFolder = databaseFileManager.getDatabaseFolder(event);
 
-        ArrayList<SQLFile> procedureFiles = procedureRepository.getDatabaseProcedures(databaseFolder);
-        List<SQLFile> modifiedSQLFiles = procedureUpdater.getSqlFilesUpdated(procedureFiles);
+        // Procedures
+        List<SQLFile> procedureFiles = procedureRepository.getDatabaseProcedures(databaseFolder);
+        List<SQLFile> modifiedProcedures = procedureUpdater.getSqlFilesUpdated(procedureFiles);
 
-        ArrayList<VirtualFile> ignoredFiles = new ArrayList<>();
+        //Tables
+        List<VirtualFile> ignoredFiles = new ArrayList<>();
         ignoredFiles.add(LocalFileSystem.getInstance().findFileByPath(publishScriptLocation));
-        ArrayList<Statement> sqlCreateTableFiles = tableRepository.getDatabaseTables(databaseFolder, ignoredFiles);
-        for(Statement statement : sqlCreateTableFiles) {
+        ignoredFiles.addAll(databaseFileManager.getProcedureFiles(databaseFolder));
+        List<Statement> databaseTableFiles = tableRepository.getDatabaseTables(databaseFolder, ignoredFiles);
+
+        for(Statement statement : databaseTableFiles) {
             statement.toString();
             //TODO update sql tables here somehow
         }
 
-        SQLFile publishScript = databaseFileManager.createPublishScript(modifiedSQLFiles);
+        //Save Publish Script
+        SQLFile publishScript = databaseFileManager.createPublishScript(modifiedProcedures);
         databaseFileManager.saveSqlFile(publishScript, publishScriptLocation);
         uiEditorHandler.openSqlFileInEditor(event, databaseFolder, publishScriptLocation);
     }
@@ -62,7 +67,7 @@ public class CreatePublishScriptHandler extends AnAction {
         BomPomReader bomPomReader = new BomPomReader(errorInvoker);
         JSqlParser jSqlParser = new CCJSqlParserManager();
         procedureUpdater = new ProcedureUpdater();
-        databaseFileManager = new DatabaseFileManager(errorInvoker);
+        databaseFileManager = new DatabaseFileManager(errorInvoker, bomPomReader);
         procedureRepository = new ProcedureRepository(bomPomReader, databaseFileManager);
         tableRepository = new TableRepository(jSqlParser, bomPomReader, errorInvoker, databaseFileManager);
         uiEditorHandler = new UiEditorActionHandler();

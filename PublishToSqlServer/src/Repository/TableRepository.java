@@ -28,10 +28,10 @@ public class TableRepository {
         filesThatCouldNotBeParsed = new ArrayList<>();
     }
 
-    public ArrayList<Statement> getDatabaseTables(final VirtualDirectoryImpl folder, ArrayList<VirtualFile> ignoredFiles) {
-        ArrayList<VirtualFile> sqlFiles = databaseFileManager.getSqlFiles(folder);
+    public List<Statement> getDatabaseTables(final VirtualDirectoryImpl folder, List<VirtualFile> ignoredFiles) {
+        List<VirtualFile> sqlFiles = databaseFileManager.getSqlFiles(folder);
         sqlFiles.removeAll(ignoredFiles);
-        ArrayList<Statement> databaseTables = new ArrayList<>();
+        List<Statement> databaseTables = new ArrayList<>();
         for (VirtualFile databaseTableFile : sqlFiles) {
             InputStreamReader fisWithoutBoms = bomPomReader.getInputStream(databaseTableFile);
             Statement table = parseFileToTable(fisWithoutBoms, databaseTableFile.getName());

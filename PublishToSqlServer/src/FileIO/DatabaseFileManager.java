@@ -18,9 +18,11 @@ import java.util.List;
 
 public class DatabaseFileManager {
     private ErrorInvoker errorInvoker;
+    private BomPomReader bomPomReader;
 
-    public DatabaseFileManager(ErrorInvoker errorInvoker){
+    public DatabaseFileManager(ErrorInvoker errorInvoker, BomPomReader bomPomReader){
         this.errorInvoker = errorInvoker;
+        this.bomPomReader = bomPomReader;
     }
 
     public void saveSqlFile(SQLFile publishScript, String location) {
@@ -35,7 +37,7 @@ public class DatabaseFileManager {
         }
     }
 
-    public ArrayList<VirtualFile> getSqlFiles(VirtualDirectoryImpl folder) {
+    public List<VirtualFile> getSqlFiles(VirtualDirectoryImpl folder) {
         ArrayList<VirtualFile> sqlFiles = new ArrayList<>();
         for (final VirtualFile fileEntry : folder.getChildren()) {
             if (fileEntry instanceof VirtualDirectoryImpl) {
@@ -77,5 +79,21 @@ public class DatabaseFileManager {
         String dataBaseProject = projectFilePath + "/Database";
 
         return new File(dataBaseProject);
+    }
+
+    public List<VirtualFile> getProcedureFiles(final VirtualDirectoryImpl folder) {
+            List<VirtualFile> sqlFiles = getSqlFiles(folder);
+            List<VirtualFile> procedures = new ArrayList<>();
+            for (VirtualFile file : sqlFiles) {
+                List<String> sqlContent = bomPomReader.readLines(file);
+                for (String sqlLine : sqlContent) {
+                    if (sqlLine.toUpperCase().contains("CREATE PROCEDURE")) {
+                        procedures.add(file);
+                        break;
+                    }
+                }
+            }
+
+            return procedures;
     }
 }
