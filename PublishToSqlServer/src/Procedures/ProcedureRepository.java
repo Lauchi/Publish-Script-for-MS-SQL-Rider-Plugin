@@ -1,5 +1,6 @@
-package Domain;
+package Procedures;
 
+import Domain.SQLFile;
 import FileIO.BomPomReader;
 import Utils.Utils;
 import com.intellij.openapi.vfs.VirtualFile;

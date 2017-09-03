@@ -1,6 +1,5 @@
-package Domain;
+package Repository;
 
-import ErrorHandling.ErrorInvoker;
 import FileIO.BomPomReader;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
@@ -43,6 +42,7 @@ public class TableRepository {
         try {
             return jSqlParser.parse(fisWithoutBoms);
         } catch (JSQLParserException e) {
+            // Todo: log error for not parsed sql files and exclude procedures from list (used libray can not parse procedures)
             return null;
         }
     }
