@@ -2,10 +2,10 @@ package FileIO;
 
 import Domain.SQLFile;
 import ErrorHandling.ErrorInvoker;
+import Utils.Utils;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
 import com.intellij.openapi.project.Project;
-import com.intellij.openapi.ui.Messages;
 import com.intellij.openapi.vfs.VirtualFile;
 import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
@@ -20,7 +20,6 @@ public class DatabaseFileManager {
     private ErrorInvoker errorInvoker;
 
     public DatabaseFileManager(ErrorInvoker errorInvoker){
-
         this.errorInvoker = errorInvoker;
     }
 
@@ -32,8 +31,23 @@ public class DatabaseFileManager {
             }
             writer.close();
         } catch (IOException e) {
-            errorInvoker.ShowPublishSciptSaveError();
+            errorInvoker.ShowPublishScriptSaveError();
         }
+    }
+
+    public ArrayList<VirtualFile> getSqlFiles(VirtualDirectoryImpl folder) {
+        ArrayList<VirtualFile> sqlFiles = new ArrayList<>();
+        for (final VirtualFile fileEntry : folder.getChildren()) {
+            if (fileEntry instanceof VirtualDirectoryImpl) {
+                sqlFiles.addAll(getSqlFiles((VirtualDirectoryImpl) fileEntry));
+            } else {
+                String extension = Utils.getFileExtension(fileEntry);
+                if (extension.equals(SQLFile.EXTENSION)) {
+                    sqlFiles.add(fileEntry);
+                }
+            }
+        }
+        return sqlFiles;
     }
 
     public SQLFile createPublishScript(List<SQLFile> modifiedSQLFiles) {

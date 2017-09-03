@@ -3,9 +3,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.regex.Pattern;
 
-/**
- * Created by sheiss on 16/07/2017.
- */
 public class SQLFile {
     public static final String EXTENSION = "sql";
     private List<String> sqlContent;
