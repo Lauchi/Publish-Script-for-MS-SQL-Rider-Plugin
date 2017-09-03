@@ -20,11 +20,8 @@ public class BomPomReader {
 
     public List<String> readLines(VirtualFile fileEntry) {
         try {
-            InputStream fileInputStream = fileEntry.getInputStream();
-            UnicodeBOMInputStream unicodeBOMInputStream = new UnicodeBOMInputStream(fileInputStream);
-            unicodeBOMInputStream.skipBOM();
-            InputStreamReader fisWithpoutBoms = new InputStreamReader(unicodeBOMInputStream);
-            BufferedReader br = new BufferedReader(fisWithpoutBoms);
+            InputStreamReader fisWithoutBoms = this.getInputStream(fileEntry);
+            BufferedReader br = new BufferedReader(fisWithoutBoms);
 
             String line;
             List<String> lines = new ArrayList<>();
@@ -41,26 +38,37 @@ public class BomPomReader {
 
     public String readContent(VirtualFile fileEntry) {
         try {
-            InputStream fileInputStream = fileEntry.getInputStream();
-            UnicodeBOMInputStream unicodeBOMInputStream = new UnicodeBOMInputStream(fileInputStream);
-            unicodeBOMInputStream.skipBOM();
-            InputStreamReader fisWithpoutBoms = new InputStreamReader(unicodeBOMInputStream);
-            BufferedReader br = new BufferedReader(fisWithpoutBoms);
+            InputStreamReader fisWithoutBoms = this.getInputStream(fileEntry);
+            BufferedReader br = new BufferedReader(fisWithoutBoms);
 
-            String         line = null;
+            String         line;
             StringBuilder  stringBuilder = new StringBuilder();
             String         ls = System.getProperty("line.separator");
 
             try {
-                while((line = br.readLine()) != null) {
-                    stringBuilder.append(line);
-                    stringBuilder.append(ls);
-                }
+                    while((line = br.readLine()) != null) {
+                        stringBuilder.append(line);
+                        stringBuilder.append(ls);
+                    }
 
                 return stringBuilder.toString();
             } finally {
                 br.close();
             }
+        } catch (IOException e) {
+            errorInvoker.ShowSQLFileNotReadableError(fileEntry.getName());
+            return null;
+    }
+
+    }
+
+    public InputStreamReader getInputStream(VirtualFile fileEntry) {
+        try {
+            InputStream fileInputStream = fileEntry.getInputStream();
+            UnicodeBOMInputStream unicodeBOMInputStream = new UnicodeBOMInputStream(fileInputStream);
+            unicodeBOMInputStream.skipBOM();
+            InputStreamReader inputStreamReader = new InputStreamReader(unicodeBOMInputStream);
+            return inputStreamReader;
         } catch (IOException e) {
             errorInvoker.ShowSQLFileNotReadableError(fileEntry.getName());
             return null;

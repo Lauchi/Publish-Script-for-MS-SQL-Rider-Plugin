@@ -1,4 +1,6 @@
+import Domain.ProcedureRepository;
 import Domain.SQLFile;
+import Domain.TableRepository;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
 import com.intellij.openapi.actionSystem.PlatformDataKeys;
@@ -12,8 +14,6 @@ import com.intellij.openapi.vfs.newvfs.impl.VirtualDirectoryImpl;
 import com.jetbrains.rider.projectView.solutionExplorer.SolutionExplorerNodeRider;
 import ErrorHandling.ErrorInvoker;
 import FileIO.BomPomReader;
-import net.pempek.unicode.UnicodeBOMInputStream;
-import net.sf.jsqlparser.JSQLParserException;
 import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.parser.JSqlParser;
 import net.sf.jsqlparser.statement.Statement;
@@ -26,9 +26,11 @@ import java.util.List;
 
 public class CreatePublishScriptHandler extends AnAction {
     private JSqlParser jSqlParser;
+    private TableRepository tableRepository;
     private BomPomReader bomPomReader;
     private ErrorInvoker errorInvoker;
     private String publishFailedTitle = "Create Publish Script Failed";
+    private ProcedureRepository procedureRepository;
 
     public CreatePublishScriptHandler() {
         super("Create _Publish _Script _Handler");
@@ -38,19 +40,17 @@ public class CreatePublishScriptHandler extends AnAction {
         errorInvoker = new ErrorInvoker();
         bomPomReader = new BomPomReader(errorInvoker);
         jSqlParser = new CCJSqlParserManager();
+        tableRepository = new TableRepository(jSqlParser, bomPomReader);
+        procedureRepository = new ProcedureRepository(bomPomReader);
         final VirtualDirectoryImpl databaseFolder = getDatabaseFolder(event);
 
         String CreateTables = null;
-        try {
-            ArrayList<Statement> sqlCreateTableFiles = getSqlCreateTableFiles(databaseFolder);
-            for(Statement statement : sqlCreateTableFiles) {
-                CreateTables += statement.toString();
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+        ArrayList<Statement> sqlCreateTableFiles = tableRepository.getDatabaseTables(databaseFolder);
+        for(Statement statement : sqlCreateTableFiles) {
+            CreateTables += statement.toString();
         }
 
-        ArrayList<SQLFile> procedureFiles = getCreateProcedureFiles(databaseFolder);
+        ArrayList<SQLFile> procedureFiles = procedureRepository.getDatabaseProcedures(databaseFolder);
         List<SQLFile> modifiedSQLFiles = getSqlFilesUpdated(procedureFiles);
         SQLFile publishScript = createPublishScript(modifiedSQLFiles);
 
@@ -174,62 +174,5 @@ public class CreatePublishScriptHandler extends AnAction {
         String dataBaseProject = projectFilePath + "/Database";
 
         return new File(dataBaseProject);
-    }
-
-    public ArrayList<Statement> getSqlCreateTableFiles(final VirtualDirectoryImpl folder) throws IOException {
-        ArrayList<Statement> sqlFiles = new ArrayList<>();
-        for (final VirtualFile fileEntry : folder.getChildren()) {
-            if (fileEntry instanceof VirtualDirectoryImpl) {
-                sqlFiles.addAll(getSqlCreateTableFiles((VirtualDirectoryImpl) fileEntry));
-            } else {
-                String extension = getFileExtension(fileEntry);
-                if (extension.equals("sql")) {
-                    UnicodeBOMInputStream unicodeBOMInputStream = new UnicodeBOMInputStream(fileEntry.getInputStream());
-                    unicodeBOMInputStream.skipBOM();
-                    InputStreamReader fisWithoutBoms = new InputStreamReader(unicodeBOMInputStream);
-                    try {
-                        Statement parse = jSqlParser.parse(fisWithoutBoms);
-                        sqlFiles.add(parse);
-                    } catch (JSQLParserException e) {
-                        return sqlFiles;
-                    }
-                }
-            }
-        }
-        return sqlFiles;
-    }
-
-    public ArrayList<SQLFile> getCreateProcedureFiles(final VirtualDirectoryImpl folder) {
-        ArrayList<SQLFile> sqlFiles = new ArrayList<>();
-        for (final VirtualFile fileEntry : folder.getChildren()) {
-            if (fileEntry instanceof VirtualDirectoryImpl) {
-                sqlFiles.addAll(getCreateProcedureFiles((VirtualDirectoryImpl) fileEntry));
-            } else {
-                String extension = getFileExtension(fileEntry);
-                if (extension.equals(SQLFile.EXTENSION)) {
-                    List<String> sqlContent = bomPomReader.readLines(fileEntry);
-                    for(String sqlLine : sqlContent) {
-                        if (sqlLine.toUpperCase().contains("CREATE PROCEDURE")) {
-                            SQLFile sqlFile = new SQLFile(sqlContent);
-                            sqlFiles.add(sqlFile);
-                            break;
-                        }
-                    }
-
-                }
-            }
-        }
-        return sqlFiles;
-    }
-
-    private String getFileExtension(VirtualFile fileEntry) {
-        String[] splits = fileEntry.getName().split("\\.");
-
-        String extension = "";
-
-        if (splits.length >= 2) {
-            extension = splits[splits.length - 1];
-        }
-        return extension;
     }
 }

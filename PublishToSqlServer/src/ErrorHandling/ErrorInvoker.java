@@ -2,7 +2,7 @@ package ErrorHandling;
 import com.intellij.openapi.ui.Messages;
 
 public class ErrorInvoker {
-    private String publishFailedTitle = "Create Publish Script Failed";;
+    private String publishFailedTitle = "Create Publish Script Failed";
 
     public void ShowSQLFileNotReadableError(String fileEntry) {
 
