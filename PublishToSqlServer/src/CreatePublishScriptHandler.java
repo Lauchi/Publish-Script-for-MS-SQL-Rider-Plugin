@@ -17,10 +17,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 public class CreatePublishScriptHandler extends AnAction {
-    private JSqlParser jSqlParser;
     private TableRepository tableRepository;
-    private BomPomReader bomPomReader;
-    private ErrorInvoker errorInvoker;
     private ProcedureRepository procedureRepository;
     private ProcedureUpdater procedureUpdater;
     private DatabaseFileManager databaseFileManager;
@@ -35,12 +32,11 @@ public class CreatePublishScriptHandler extends AnAction {
 
         final VirtualDirectoryImpl databaseFolder = databaseFileManager.getDatabaseFolder(event);
 
-        String CreateTables = null;
         ArrayList<Statement> sqlCreateTableFiles = tableRepository.getDatabaseTables(databaseFolder);
         for(Statement statement : sqlCreateTableFiles) {
-            CreateTables += statement.toString();
+            statement.toString();
+            //TODO update sql tables here somehow
         }
-        //TODO use tables
 
         ArrayList<SQLFile> procedureFiles = procedureRepository.getDatabaseProcedures(databaseFolder);
         List<SQLFile> modifiedSQLFiles = procedureUpdater.getSqlFilesUpdated(procedureFiles);
@@ -53,9 +49,9 @@ public class CreatePublishScriptHandler extends AnAction {
     }
 
     private void createDIYContainer() {
-        errorInvoker = new ErrorInvoker();
-        bomPomReader = new BomPomReader(errorInvoker);
-        jSqlParser = new CCJSqlParserManager();
+        ErrorInvoker errorInvoker = new ErrorInvoker();
+        BomPomReader bomPomReader = new BomPomReader(errorInvoker);
+        JSqlParser jSqlParser = new CCJSqlParserManager();
         tableRepository = new TableRepository(jSqlParser, bomPomReader);
         procedureRepository = new ProcedureRepository(bomPomReader);
         procedureUpdater = new ProcedureUpdater();
@@ -65,6 +61,7 @@ public class CreatePublishScriptHandler extends AnAction {
 
     @Override
     public void update(AnActionEvent event) {
+        UiEditorActionHandler uiEditorHandler = new UiEditorActionHandler();
         uiEditorHandler.showOptionInDialogIfUserClickedOnDatabaseProject(event);
     }
 }
