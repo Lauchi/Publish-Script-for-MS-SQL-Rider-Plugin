@@ -22,4 +22,8 @@ public class ErrorInvoker {
         }
         Messages.showWarningDialog(sqlParsWarnings, warning);
     }
+
+    public void ShowConnectionStringError() {
+        Messages.showErrorDialog("Could not connect to database, check connectionstring in publish.xml", publishFailedTitle);
+    }
 }

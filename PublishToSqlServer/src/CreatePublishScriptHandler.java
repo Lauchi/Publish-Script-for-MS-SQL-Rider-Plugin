@@ -3,6 +3,8 @@ import Procedures.ProcedureUpdater;
 import Procedures.ProcedureRepository;
 import Domain.SQLFile;
 import Repository.TableRepository;
+import Tables.DatabaseAdapter.DatabaseAdapter;
+import Tables.DatabaseTableUpdater;
 import Utils.UiEditorActionHandler;
 import com.intellij.openapi.actionSystem.AnAction;
 import com.intellij.openapi.actionSystem.AnActionEvent;
@@ -15,6 +17,9 @@ import net.sf.jsqlparser.parser.CCJSqlParserManager;
 import net.sf.jsqlparser.parser.JSqlParser;
 import net.sf.jsqlparser.statement.Statement;
 
+import java.sql.Connection;
+import java.sql.DriverManager;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -25,13 +30,21 @@ public class CreatePublishScriptHandler extends AnAction {
     private DatabaseFileManager databaseFileManager;
     private UiEditorActionHandler uiEditorHandler;
     private String publishScriptLocation;
+    private DatabaseTableUpdater tableUpdater;
+    private Connection connection;
+    private ErrorInvoker errorInvoker;
 
     public CreatePublishScriptHandler() {
         super("Create _Publish _Script _Handler");
     }
 
     public void actionPerformed(AnActionEvent event) {
-        createDIYContainer(event);
+        try {
+            createDIYContainer(event);
+        } catch (SQLException e) {
+            errorInvoker.ShowConnectionStringError();
+            return;
+        }
 
         final VirtualDirectoryImpl databaseFolder = databaseFileManager.getDatabaseFolder(event);
 
@@ -44,23 +57,28 @@ public class CreatePublishScriptHandler extends AnAction {
         ignoredFiles.add(LocalFileSystem.getInstance().findFileByPath(publishScriptLocation));
         ignoredFiles.addAll(databaseFileManager.getProcedureFiles(databaseFolder));
         List<Statement> databaseTableFiles = tableRepository.getDatabaseTables(databaseFolder, ignoredFiles);
-
-        for(Statement statement : databaseTableFiles) {
-            statement.toString();
-            //TODO update sql tables here somehow
-        }
+        List<SQLFile> modifiedTables = tableUpdater.getTableFilesUpdated(databaseTableFiles, connection);
 
         //Save Publish Script
-        SQLFile publishScript = databaseFileManager.createPublishScript(modifiedProcedures);
+        List<SQLFile> modifiedSQLFiles = new ArrayList<>();
+        modifiedSQLFiles.addAll(modifiedProcedures);
+        modifiedSQLFiles.addAll(modifiedTables);
+
+        SQLFile publishScript = databaseFileManager.createPublishScript(modifiedSQLFiles);
         databaseFileManager.saveSqlFile(publishScript, publishScriptLocation);
         uiEditorHandler.openSqlFileInEditor(event, databaseFolder, publishScriptLocation);
     }
 
-    private void createDIYContainer(AnActionEvent event) {
-        ErrorInvoker errorInvoker = new ErrorInvoker();
+    private void createDIYContainer(AnActionEvent event) throws SQLException {
+        errorInvoker = new ErrorInvoker();
         BomPomReader bomPomReader = new BomPomReader(errorInvoker);
         JSqlParser jSqlParser = new CCJSqlParserManager();
+        //Todo: get from publishscript.xml
+        String connectionString = "Data Source=LOCALHOST\\NEXUS;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=60;Encrypt=False;TrustServerCertificate=True;Integrated Security=SSPI;";
+        connection = DriverManager.getConnection(connectionString);
         procedureUpdater = new ProcedureUpdater();
+        DatabaseAdapter databaseAdapter = new DatabaseAdapter();
+        tableUpdater = new DatabaseTableUpdater(databaseAdapter);
         databaseFileManager = new DatabaseFileManager(errorInvoker, bomPomReader);
         procedureRepository = new ProcedureRepository(bomPomReader, databaseFileManager);
         tableRepository = new TableRepository(jSqlParser, bomPomReader, errorInvoker, databaseFileManager);
