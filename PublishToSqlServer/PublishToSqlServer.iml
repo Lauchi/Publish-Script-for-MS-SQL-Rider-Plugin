@@ -15,5 +15,6 @@
     <orderEntry type="library" name="org.mockito:mockito-core:2.0.89-beta" level="project" />
     <orderEntry type="library" name="org.objenesis:objenesis:2.6" level="project" />
     <orderEntry type="library" name="net.bytebuddy:byte-buddy:1.7.3" level="project" />
+    <orderEntry type="library" name="mssql-jdbc-6.2.1.jre7" level="project" />
   </component>
 </module>

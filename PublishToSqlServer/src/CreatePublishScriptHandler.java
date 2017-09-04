@@ -44,6 +44,9 @@ public class CreatePublishScriptHandler extends AnAction {
         } catch (SQLException e) {
             errorInvoker.ShowConnectionStringError();
             return;
+        } catch (ClassNotFoundException e) {
+            errorInvoker.ShowConnectionStringError();
+            return;
         }
 
         final VirtualDirectoryImpl databaseFolder = databaseFileManager.getDatabaseFolder(event);
@@ -69,13 +72,14 @@ public class CreatePublishScriptHandler extends AnAction {
         uiEditorHandler.openSqlFileInEditor(event, databaseFolder, publishScriptLocation);
     }
 
-    private void createDIYContainer(AnActionEvent event) throws SQLException {
+    private void createDIYContainer(AnActionEvent event) throws SQLException, ClassNotFoundException {
         errorInvoker = new ErrorInvoker();
         BomPomReader bomPomReader = new BomPomReader(errorInvoker);
         JSqlParser jSqlParser = new CCJSqlParserManager();
         //Todo: get from publishscript.xml
-        String connectionString = "Data Source=LOCALHOST\\NEXUS;Integrated Security=True;Persist Security Info=False;Pooling=False;MultipleActiveResultSets=False;Connect Timeout=60;Encrypt=False;TrustServerCertificate=True;Integrated Security=SSPI;";
-        connection = DriverManager.getConnection(connectionString);
+        String url ="jdbc:sqlserver://LOCALHOST\\NEXUS;databaseName=test_sales_employeetaskautomationservice;integratedSecurity=true;";
+        Class.forName("com.microsoft.sqlserver.jdbc.SQLServerDriver");
+        connection = DriverManager.getConnection(url);
         procedureUpdater = new ProcedureUpdater();
         DatabaseAdapter databaseAdapter = new DatabaseAdapter();
         tableUpdater = new DatabaseTableUpdater(databaseAdapter);
