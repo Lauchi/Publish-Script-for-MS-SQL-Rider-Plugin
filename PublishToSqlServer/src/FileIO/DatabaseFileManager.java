@@ -73,27 +73,29 @@ public class DatabaseFileManager {
         return null;
     }
 
-    public File getPublishScriptLocation(AnActionEvent event) {
-        Project project = event.getData(PlatformDataKeys.PROJECT);
-        String projectFilePath = project.getBasePath();
-        String dataBaseProject = projectFilePath + "/Database";
-
-        return new File(dataBaseProject);
+    public VirtualFile getPublishScriptFolder(AnActionEvent event) {
+        Object project = event.getData(PlatformDataKeys.SELECTED_ITEM);
+        if (project instanceof SolutionExplorerNodeRider) {
+            SolutionExplorerNodeRider node = (SolutionExplorerNodeRider) project;
+            VirtualFile path = node.getVirtualFile().getParent();
+            return path;
+        }
+        return null;
     }
 
     public List<VirtualFile> getProcedureFiles(final VirtualDirectoryImpl folder) {
-            List<VirtualFile> sqlFiles = getSqlFiles(folder);
-            List<VirtualFile> procedures = new ArrayList<>();
-            for (VirtualFile file : sqlFiles) {
-                List<String> sqlContent = bomPomReader.readLines(file);
-                for (String sqlLine : sqlContent) {
-                    if (sqlLine.toUpperCase().contains("CREATE PROCEDURE")) {
-                        procedures.add(file);
-                        break;
-                    }
+        List<VirtualFile> sqlFiles = getSqlFiles(folder);
+        List<VirtualFile> procedures = new ArrayList<>();
+        for (VirtualFile file : sqlFiles) {
+            List<String> sqlContent = bomPomReader.readLines(file);
+            for (String sqlLine : sqlContent) {
+                if (sqlLine.toUpperCase().contains("CREATE PROCEDURE")) {
+                    procedures.add(file);
+                    break;
                 }
             }
+        }
 
-            return procedures;
+        return procedures;
     }
 }

@@ -65,7 +65,7 @@ public class CreatePublishScriptHandler extends AnAction {
         procedureRepository = new ProcedureRepository(bomPomReader, databaseFileManager);
         tableRepository = new TableRepository(jSqlParser, bomPomReader, errorInvoker, databaseFileManager);
         uiEditorHandler = new UiEditorActionHandler();
-        publishScriptLocation = databaseFileManager.getPublishScriptLocation(event) + "\\publishScript.sql";
+        publishScriptLocation = databaseFileManager.getPublishScriptFolder(event).getPath() + "\\publishScript.sql";
     }
 
     @Override
