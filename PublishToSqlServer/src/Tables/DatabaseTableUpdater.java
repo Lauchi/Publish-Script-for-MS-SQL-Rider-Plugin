@@ -24,7 +24,7 @@ public class DatabaseTableUpdater {
                 CreateTable table = (CreateTable) statement;
                 List<ColumnDefinition> columnDefinitions = table.getColumnDefinitions();
                 String name = table.getTable().getName();
-                Table tableUpdater = databaseAdapter.getTable(name, connectionString);
+                CreateTable tableUpdater = databaseAdapter.getTable(name, connectionString);
             }
         }
         return null;
